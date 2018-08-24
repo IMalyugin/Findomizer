@@ -1,0 +1,2 @@
+0.0
+- As initial commit - cloned Sepens FinderMode v1.13
