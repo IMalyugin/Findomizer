@@ -1,17 +1,19 @@
-name = 'FinderMod'
-description = 'Highlights nearby containers that contain necessary items.\nJust hold item, or hover over ingredients in CraftMenu\n\nCompatible to Craft Pot mod. Hover over recipe ingredients to eg. find veggies'
-author = 'modding,Serpens'
-version = '1.13'
+name = 'Findomizer'
+description = 'Client Version of the famous Finder mode.Works by memorizing contents of open containers.\nHighlights nearby containers that contain necessary items.\n'
+author = 'IvanX, Serpens, modding'
+version = '0.01'
 forumthread = ''
 api_version = 6
 api_version_dst = 10 -- correct api version added
 priority = -2221 -- has to be this low to load after Craft Pot mod
-dont_starve_compatible = true
-reign_of_giants_compatible = true
-shipwrecked_compatible = true
+dont_starve_compatible = false
+reign_of_giants_compatible = false
+shipwrecked_compatible = false
 dst_compatible = true
-all_clients_require_mod = true -- client_only_mod does not work =/
-client_only_mod = false
+--all_clients_require_mod = true
+--client_only_mod = false
+all_clients_require_mod = false
+client_only_mod = true
 server_filter_tags = {}
 
 icon_atlas = 'atlas.xml'
