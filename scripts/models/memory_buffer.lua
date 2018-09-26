@@ -2,9 +2,11 @@ local __coordinates = require('utils/coordinates')
 local GetIntCoords = __coordinates.GetIntCoords
 local GetIdentifierSet = __coordinates.GetIdentifierSet
 
-
---- Memory buffer is a class that accumulates a data set for multiple instances
---- it saves and loads them in bulks, preventing overhead to disk I/O
+---
+-- Memory buffer is a class that accumulates a data set for multiple instances
+-- it saves and loads them in bulks, preventing overhead to disk I/O
+-- A single buffer holds memory for a square on minimap,
+-- when save/load is called for memory buffer, every item in the square is saved/loaded
 local MemoryBuffer = Class(function(self, globalId)
     self._classToUID = {}
     self._saveInProgress = false
@@ -37,13 +39,13 @@ function MemoryBuffer:CreateClassBinding(uid, class)
 end
 
 --- Save method works in two different mods,
----  master mode - is when save orchestration is performed,
----  slave mode - is when the data is gathered
+--- master mode - is when save orchestration is performed,
+--- slave mode - is when the data is gathered
 function MemoryBuffer:OnSave(data, class)
     if not self._saveInProgress then
         --- master mode
         self._saveInProgress = true
-        for k, v in pairs(self._classToUID) do
+        for k, _ in pairs(self._classToUID) do
             k:OnSave()
         end
         self:__DoSave()
@@ -67,7 +69,7 @@ end
 
 --- Memory gate is a singleton entry point for memory buffers,
 --- it initializes new buffers when needed
---- and forwards requests towards them
+--- and forwards requests to them
 --- utilizes global identifiers
 ---
 --- Model works under one HUGE assumption, every method is called via class passed to it,

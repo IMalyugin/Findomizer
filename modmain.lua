@@ -2,15 +2,17 @@ local _G = GLOBAL
 local require = _G.require
 
 local __commonUtils = require('utils/common')(GLOBAL, env)
-local SERVER_SIDE = __commonUtils.SERVER_SIDE
-local CLIENT_SIDE = __commonUtils.CLIENT_SIDE
+--local IsServerSide = __commonUtils.IsServerSide
+local IsClientSide = __commonUtils.IsClientSide
 local AddPlayerPostInit = __commonUtils.AddPlayerPostInit
 
-local __highlight = require('utils/highlight')(GLOBAL, env)
-local ApplyHighlight = __highlight.ApplyHighlight
-local ClearHighlight = __highlight.ClearHighlight
+local Findomizer = require('models/findomizer')
 
-local client_option = GetModConfigData("active", true) -- to allow clients to disable highlighting
+local __highlight = require('utils/highlight')(GLOBAL, env)
+--local ApplyHighlight = __highlight.ApplyHighlight
+--local ClearHighlight = __highlight.ClearHighlight
+--
+--local client_option = GetModConfigData("active", true) -- to allow clients to disable highlighting
 
 
 
@@ -38,7 +40,7 @@ local function val_to_str ( v, indent )
   end
 end
 
-local function key_to_str ( k, indent )
+local function key_to_str ( k )
   if "string" == type( k ) and string.match( k, "^[_%a][_%a%d]*$" ) then
     return k
   else
@@ -63,7 +65,7 @@ table.stringify = function( tbl, indent )
   end
   for k, v in pairs( tbl ) do
     if not done[ k ] then
-      table.insert( result, indent..key_to_str( k, indent ) .. "=" .. val_to_str( v, indent.."  " ) )
+      table.insert( result, indent..key_to_str( k ) .. "=" .. val_to_str( v, indent.."  " ) )
 	  count = count + 1
     end
   end
@@ -125,7 +127,7 @@ end
 --
 --local function ClientUnhighlightChests(owner,prefab,source,unhighlighten,highlighten)
 --    print ('ClientUnhighlightChests')
---    if CLIENT_SIDE then -- only client pass
+--    if IsClientSide then -- only client pass
 --        print ('I am Client')
 --        if unhighlighten then
 --            -- print("client unhighlight start")
@@ -148,7 +150,7 @@ end
 --                end
 --            end
 --        end
---        if SERVER_SIDE then -- can be both client and server for player 1
+--        if IsServerSide then -- can be both client and server for player 1
 --            print("~~~ServerSide call");
 --            ServerRPCFunction(owner,prefab,source,unhighlighten,highlighten) -- call it directly without rpc, if we are also server
 --        else
@@ -160,7 +162,7 @@ end
 --
 --local function DoHighlightStuff(owner,prefab,source,unhighlighten,highlighten)
 --    print ('Do highlight stuff please')
---    if CLIENT_SIDE and owner==GLOBAL.ThePlayer then
+--    if IsClientSide and owner==GLOBAL.ThePlayer then
 --        print ('Do highlight as client')
 --        ClientUnhighlightChests(owner,prefab,source,unhighlighten,highlighten)
 --    end
@@ -179,7 +181,7 @@ end
 --
 --local function OnDirtyEventSearchedChest(inst,i) -- this is called on client, if the server does inst.mynetvarTitleStufff:set(...)
 --    -- print("OnDirtyEventSearchedChest i "..tostring(i))
---    if CLIENT_SIDE and inst==GLOBAL.ThePlayer then -- only this specific client pass
+--    if IsClientSide and inst==GLOBAL.ThePlayer then -- only this specific client pass
 --        if client_option then
 --            local chest = inst["mynetvarSearchedChest"..tostring(i)]:value()
 --            if chest then
@@ -321,19 +323,26 @@ end
 --
 
 
-function GetStorage()
-    return GLOBAL.ThePlayer.components.container_memory_storage
-end
-
-
 local function ContainerPostConstruct(inst, prefab)
+  print('initialize container')
   if prefab:HasTag('structure') then
-    prefab:AddComponent('container_memory')
-    prefab.components.container_memory:InjectHandlers(inst)
+    print('FOUND STRUCTURE TAG')
+    Findomizer:AddContainer(prefab)
   end
 end
 
-AddPlayerPostInit(function(self)
+AddPlayerPostInit(function(owner)
+  owner:ListenForEvent('newactiveitem', function()
+    local prefab = data.item and data.item.prefab or nil
+    if owner and prefab then
+        -- highlight containers containing hovered item
+        Findomizer:HighlightItems({prefab})
+    else
+        -- cancel highlight when item gets dehovered
+        Findomizer:ClearHighlight()
+    end
+  end)
+  -- Findomizer:HighlightItems({'butterfly_wings'})
   --  print('~~~SECRETS of TheSim'..table.stringify(TheSim))
   --print('~~~SECRETS of TheNet'..table.stringify(GLOBAL.TheNet))
   --  print('adding ContainerMemoryStorage')
@@ -341,6 +350,14 @@ AddPlayerPostInit(function(self)
 end)
 
 -- first block is used for DST clients, second - for DS/DST Host
-if CLIENT_SIDE then
+if IsClientSide then
 	AddClassPostConstruct("components/container_replica",  ContainerPostConstruct)
+    print('Running on Clint side')
+else
+	AddPrefabPostInitAny(function(inst)
+		if inst.components.container then
+			ContainerPostConstruct(inst.components.container, inst)
+		end
+	end)
+    print('Running on Host')
 end
