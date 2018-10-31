@@ -323,16 +323,17 @@ end
 --
 
 
-local function ContainerPostConstruct(inst, prefab)
+local function ContainerPostConstruct(replica, inst)
   print('initialize container')
-  if prefab:HasTag('structure') then
+  if inst:HasTag('structure') then
     print('FOUND STRUCTURE TAG')
-    Findomizer:AddContainer(prefab)
+    Findomizer:AddContainer(inst)
+    inst.components.container_memory:InjectHandlers(replica)
   end
 end
 
 AddPlayerPostInit(function(owner)
-  owner:ListenForEvent('newactiveitem', function()
+  owner:ListenForEvent('newactiveitem', function(data)
     local prefab = data.item and data.item.prefab or nil
     if owner and prefab then
         -- highlight containers containing hovered item

@@ -4,6 +4,70 @@ local function IsClientSim()
   return TheNet:GetIsClient()
 end
 
+
+
+-- stringify lib
+
+
+local function val_to_str ( v, indent )
+  if "string" == type( v ) then
+    v = string.gsub( v, "\n", "\\n" )
+    if string.match( string.gsub(v,"[^'\"]",""), '^"+$' ) then
+      return "'" .. v .. "'"
+    end
+    return '"' .. string.gsub(v,'"', '\\"' ) .. '"'
+  elseif "table" == type( v ) then
+    if indent == "        " then
+		return "~TooDeep~"
+	else
+		return table.stringify( v, indent )
+	end
+  else
+    return tostring( v )
+  end
+end
+
+local function key_to_str ( k )
+  if "string" == type( k ) and string.match( k, "^[_%a][_%a%d]*$" ) then
+    return k
+  else
+    return "[" .. tostring( k ) .. "]"
+  end
+end
+
+
+table.stringify = function( tbl, indent )
+  indent = indent or ""
+  local count = 0
+  local result, done = {}, {}
+
+  if type( tbl ) ~= 'table' then
+      return val_to_str( tbl )
+  end
+
+  for k, v in ipairs( tbl ) do
+    table.insert( result, val_to_str( v, indent.."  " ) )
+    done[ k ] = true
+	count = count + 1
+  end
+  for k, v in pairs( tbl ) do
+    if not done[ k ] then
+      table.insert( result, indent..key_to_str( k ) .. "=" .. val_to_str( v, indent.."  " ) )
+	  count = count + 1
+    end
+  end
+  if count > 1 then
+	return "{\n" .. table.concat( result, ",\n" ) .. "\n"..indent.."}"
+  else
+    return "{ " .. table.concat( result, "," ) .. " }"
+  end
+end
+
+
+-- /stringify lib
+
+
+
 ---
 -- Extends `class` `method` with function `extendFn` that takes same arguments
 --
@@ -11,7 +75,7 @@ function ExtendInstMethod(inst, method, extendFn)
   local originalMethod = inst[method]
   inst[method] = function(...)
     local result = originalMethod(...)
-    extendFn(...)
+    extendFn(result, ...)
     return result
   end
 end
@@ -21,7 +85,6 @@ local ContainerMemory = Class(function(self, inst)
   self._items = {}
   self._GetStorage = nil
 
-  inst.components.container_memory:InjectHandlers(inst)
   if IsClientSim() then
     inst:DoTaskInTime(0, function()
       self:OnLoad()
@@ -30,28 +93,25 @@ local ContainerMemory = Class(function(self, inst)
   end
 end)
 
-function ContainerMemory:AddItem(item, quantity)
-  local quantity = quantity or 1
-  local prefab = item.prefab
-  if not self._items[prefab] then
-    self._items[prefab] = (self._items[prefab] or 0) + quantity
-  end
+function ContainerMemory:AddItem(prefab, quantity)
+  quantity = quantity or 1
+  print('Adding '..prefab)
+  self._items[prefab] = (self._items[prefab] or 0) + quantity
 end
 
 ---
 -- Bridge method from container_memory to container_replica
 -- creates listeners to keep memory up to date
 --
-function ContainerMemory:InjectHandlers(inst)
-  local prefab = inst.inst
+function ContainerMemory:InjectHandlers(replica)
   local TrackNextGetItems = false
 
-  ExtendInstMethod(inst, 'Open', function()
+  ExtendInstMethod(replica, 'Open', function()
     print('~~~ Open')
     TrackNextGetItems = true
   end)
 
-  ExtendInstMethod(inst, 'GetItems', function()
+  ExtendInstMethod(replica, 'GetItems', function(items)
     print('~~~ Getitems')
     if TrackNextGetItems then
       print('~~~ GetItems fired')
@@ -59,15 +119,16 @@ function ContainerMemory:InjectHandlers(inst)
 
       self._items = {}
       for k, v in pairs( items ) do
-        print(tostring(k))
-        self:AddItem(v.prefab, v.quantity)
+        -- print('~~~~~ items for GetItems:')
+        -- print(table.stringify(v))
+        self:AddItem(v.prefab)
       end
       self:PrintContents()
     end
   end)
 
 
-  ExtendInstMethod(inst, 'OnEntityRemove', function()
+  ExtendInstMethod(replica, 'OnEntityRemove', function()
     print('removing Entity')
     self:OnSave()
   end)
@@ -77,12 +138,14 @@ function ContainerMemory:InjectHandlers(inst)
     print('onchange')
     self:PrintContents()
   end
-  prefab:ListenForEvent("itemget", changefn)
-  prefab:ListenForEvent("itemlose", changefn)
+  self.inst:ListenForEvent("itemget", changefn)
+  self.inst:ListenForEvent("itemlose", changefn)
 end
 
 function ContainerMemory:OnSave()
-  local data = self._items
+  local data = self:GetItems()
+  print('~~~ saving items')
+  self:PrintContents()
   MemoryBufferGate:OnSave(data, self)
 end
 
@@ -105,9 +168,9 @@ end
 
 function ContainerMemory:HasItemProbability()
   local items = self:GetItems()
-  for _, item in ipairs(items) do
+  for _, item in pairs(items) do
     -- TODO: make count of items actually count
-    if self._items[prefab] then
+    if self._items[item] then
       return self._accuracy
     else
       return -self._accuracy
@@ -116,8 +179,9 @@ function ContainerMemory:HasItemProbability()
 end
 
 function ContainerMemory:PrintContents()
-  for k, v in ipairs( self:GetItems() ) do
-    print('~~~Contains'..v)
+  print('~~~Printing Container contents')
+  for k, v in pairs( self:GetItems() ) do
+    print('~~~Contains'..k)
   end
 end
 

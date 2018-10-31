@@ -11,12 +11,12 @@ local HighlightController = Class(function(self, inst)
 end)
 
 function HighlightController:_SetHighlight(colour, percentage)
-  if not inst.components.highlight then
-    inst.AddComponent('highlight')
+  if not self.inst.components.highlight then
+    self.inst.AddComponent('highlight')
   end
-  local r, g, b = colour()
+  local _r, _g, _b = colour()
 
-  inst.components.highlight:Highlight(r * percentage, g * percentage, b * percentage)
+  self.inst.components.highlight:Highlight(_r * percentage, _g * percentage, _b * percentage)
 end
 
 function HighlightController:SetGreenHighlight(percentage)
@@ -28,8 +28,8 @@ function HighlightController:SetRedHighlight(percentage)
 end
 
 function HighlightController:ClearHighlight()
-  if inst.components.highlight then
-    inst.components.highlight:UnHighlight()
+  if self.inst.components.highlight then
+    self.inst.components.highlight:UnHighlight()
   end
 end
 

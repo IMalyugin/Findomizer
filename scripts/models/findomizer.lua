@@ -36,4 +36,11 @@ function Findomizer:HighlightItems(items)
   end
 end
 
-return Findomizer
+function Findomizer:ClearHighlight()
+  -- loop through all added containers
+  for _, haystack in ipairs(self._list) do
+    haystack.components.highlight_controller:ClearHighlight()
+  end
+end
+
+return Findomizer()
