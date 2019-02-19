@@ -13,7 +13,7 @@ local MemoryBuffer = Class(function(self, globalId)
     self._data = {}
     self._filepath = "session/"
         ..(TheNet:GetSessionIdentifier() or "INVALID_SESSION").."/"
-        .."mbd_"..globalId -- [M]emory [B]uffer [D]ata
+        .."fndmzr_"..globalId -- stands for Findomizer
     print('Initialized a MemoryBuffer '..self._filepath)
     self:__DoLoad()
 end)
@@ -21,12 +21,13 @@ end)
 function MemoryBuffer:__DoSave()
     local strdata = json.encode(self._data)
     TheSim:SetPersistentString(self._filepath, strdata, true)
+    print('MemoryBuffer saving data')
 end
 
 function MemoryBuffer:__DoLoad()
     TheSim:GetPersistentString(self._filepath, function(success, strdata)
         if success then
-            print('loaded successfully')
+            print('MemoryBuffer loaded successfully')
             self._data = json.decode(strdata)
         end
     end)
@@ -61,6 +62,7 @@ end
 --- all the data is read on MemoryBuffer initialization
 --- this method can't be called before CreateClassBinding
 function MemoryBuffer:OnLoad(class)
+    print('OnLoad is called on MemoryBuffer')
     local uid = self._classToUID[class]
     return self._data[uid]
 end

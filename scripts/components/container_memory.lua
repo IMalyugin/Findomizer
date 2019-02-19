@@ -127,19 +127,19 @@ function ContainerMemory:InjectHandlers(replica)
     end
   end)
 
-
-  ExtendInstMethod(replica, 'OnEntityRemove', function()
-    print('removing Entity')
-    self:OnSave()
-  end)
-
-
   local function changefn(inst)
     print('onchange')
     self:PrintContents()
   end
+
+  local function savefn(inst)
+    print('onremove')
+    self:OnSave()
+  end
+
   self.inst:ListenForEvent("itemget", changefn)
   self.inst:ListenForEvent("itemlose", changefn)
+  self.inst:ListenForEvent("onremove", savefn)
 end
 
 function ContainerMemory:OnSave()
