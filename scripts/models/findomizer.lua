@@ -21,17 +21,24 @@ function Findomizer:HighlightItems(items)
     local prob = -1
     -- loop throuh all the items we wish to find
     for _, needle in ipairs(items) do
-      itemProb = haystack.components.container_memory:HasItemProbability(needle)
+      itemProb = haystack.components.container_memory:GetItemProbability(needle)
       -- if we are searching for more than one item, best we can do is find the highest probability
-      prob = math.max(prob, itemProb)
+      if itemProb > 0 then
+        prob = math.max(prob, itemProb)
+      elseif prob <= 0 then
+        -- if probability is not positive, make it worse
+        prob = math.min(prob, itemProb)
+      end
     end
+
+    print('GetItemProbability is '..tostring(prob))
 
     -- highlight as green if we know there is an item, red if we know there isn't or leave default on unknown
     -- TODO: need to move smart highlighting to actual probability calculation
     if prob > 0 then
-      haystack.components.highlight_controller:SetGreenHighlight(math.min(prob, .15))
+      haystack.components.highlight_controller:SetGreenHighlight(math.max(prob, .25))
     elseif prob < 0 then
-      haystack.components.highlight_controller:SetRedHighlight(math.max(prob, .15))
+      haystack.components.highlight_controller:SetRedHighlight(math.max(-prob, .25))
     end
   end
 end

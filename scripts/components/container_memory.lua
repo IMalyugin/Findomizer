@@ -82,8 +82,9 @@ end
 
 local ContainerMemory = Class(function(self, inst)
   self.inst = inst
-  self._items = {}
+  self._items = nil
   self._GetStorage = nil
+  self._accuracy = 0
 
   if IsClientSim() then
     inst:DoTaskInTime(0, function()
@@ -123,6 +124,7 @@ function ContainerMemory:InjectHandlers(replica)
         -- print(table.stringify(v))
         self:AddItem(v.prefab)
       end
+      self._accuracy = 1
       self:PrintContents()
     end
   end)
@@ -166,15 +168,20 @@ function ContainerMemory:GetItems()
   return self._items
 end
 
-function ContainerMemory:HasItemProbability()
+function ContainerMemory:GetItemProbability(needle)
   local items = self:GetItems()
-  for _, item in pairs(items) do
-    -- TODO: make count of items actually count
-    if self._items[item] then
-      return self._accuracy
-    else
-      return -self._accuracy
-    end
+  print('Checking item probabiity'..needle)
+
+  -- we know nothing about chest contents
+  if items == nil then return 0 end
+
+  -- TODO: make count of items actually count
+  if items[needle] then
+    -- the item is most likely in container
+    return self._accuracy
+  else
+    -- the item is most likely not in container
+    return -self._accuracy
   end
 end
 

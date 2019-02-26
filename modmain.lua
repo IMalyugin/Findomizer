@@ -332,27 +332,36 @@ local function ContainerPostConstruct(replica, inst)
   end
 end
 
-AddPlayerPostInit(function(owner)
-  owner:ListenForEvent('newactiveitem', function(data)
-    local prefab = data.item and data.item.prefab or nil
-    if owner and prefab then
-        -- highlight containers containing hovered item
-        Findomizer:HighlightItems({prefab})
-    else
-        -- cancel highlight when item gets dehovered
-        Findomizer:ClearHighlight()
+local function ItemTilePostConstruct(self)
+  local OriginalGainFocusHandler = self.OnGainFocus
+  function self:OnGainFocus(...)
+    local prefab = self.item and self.item.prefab
+
+    print('~~~~~Hover a '..tostring(prefab)..', Wooohooo')
+    if prefab then
+      -- highlight containers containing hovered item
+      Findomizer:HighlightItems({prefab})
     end
-  end)
-  -- Findomizer:HighlightItems({'butterfly_wings'})
-  --  print('~~~SECRETS of TheSim'..table.stringify(TheSim))
-  --print('~~~SECRETS of TheNet'..table.stringify(GLOBAL.TheNet))
-  --  print('adding ContainerMemoryStorage')
-  --self:AddComponent('container_memory_storage')
-end)
+
+    if OriginalGainFocusHandler then
+      return OriginalGainFocusHandler(self,...)
+    end
+  end
+
+  local OriginalLoseFocusHandler = self.OnLoseFocus
+  function self:OnLoseFocus(...)
+    print('~~~~~Dehover a '..tostring(prefab)..', Wooohooo')
+    Findomizer:ClearHighlight()
+    if OriginalLoseFocusHandler then
+      return OriginalLoseFocusHandler(self,...)
+    end
+  end
+end
 
 -- first block is used for DST clients, second - for DS/DST Host
 if IsClientSide then
 	AddClassPostConstruct("components/container_replica",  ContainerPostConstruct)
+  AddClassPostConstruct("widgets/itemtile", ItemTilePostConstruct)
     print('Running on Clint side')
 else
 	AddPrefabPostInitAny(function(inst)

@@ -1,5 +1,5 @@
 local g = function() return 0, .25, 0 end
-local r = function() return 0.25, 0, 0 end
+local r = function() return .25, 0, 0 end
 
 ---
 -- Hightlight controller is a component for manual highlighting of prefabs,
@@ -12,7 +12,7 @@ end)
 
 function HighlightController:_SetHighlight(colour, percentage)
   if not self.inst.components.highlight then
-    self.inst.AddComponent('highlight')
+    self.inst:AddComponent('highlight')
   end
   local _r, _g, _b = colour()
 
@@ -20,10 +20,12 @@ function HighlightController:_SetHighlight(colour, percentage)
 end
 
 function HighlightController:SetGreenHighlight(percentage)
+  print('Set green '..tostring(percentage))
   self:_SetHighlight(g, percentage)
 end
 
 function HighlightController:SetRedHighlight(percentage)
+  print('Set red '..tostring(percentage))
   self:_SetHighlight(r, percentage)
 end
 
